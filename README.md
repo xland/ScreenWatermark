@@ -39,11 +39,10 @@ A tiny, low-resource screen watermarking tool.
 # Note
 
 - Not all system-installed fonts are usable. The following fonts have been tested and confirmed to work:
-> 并不是所有系统已安装字体都可以使用，目前已测试可用的字体有：
-> - SimHei
-> - SimKai
-> - SimFang
-> - Arial (does not support Chinese characters)
+  - SimHei
+  - SimKai
+  - SimFang
+  - Arial (does not support Chinese characters)
 
 - This project is based on [Thorvg](https://github.com/thorvg/thorvg).
 
