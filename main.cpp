@@ -1,16 +1,70 @@
 #include <Windows.h>
+#include <shlobj.h>
 #include <cmath>
 #include <numbers>
 #include <thread>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <format>
 #include <thorvg.h>
 
-int x, y, w, h,wScale,hScale;
+int w, h,wScale,hScale;
+float fontSize{ 16.f }, padding{ 16.f };
+std::string font{ "SimHei" };
+std::string text{ "Hello" };
+int angle{ -20 };
+int colorR{ 66 }, colorG{ 88 }, colorB{ 188 },opacity{ 30 };
 float dpi;
 HWND hwnd;
-std::vector<uint32_t> buffer;
-tvg::SwCanvas* canvas;
 
-void winPaint() {
+std::string wstringToUtf8(const std::wstring& wstr) {
+    if (wstr.empty()) return std::string();
+    int sizeNeeded = WideCharToMultiByte(CP_UTF8,0,wstr.data(),
+        static_cast<int>(wstr.size()),nullptr,0, nullptr, nullptr);
+    if (sizeNeeded == 0) {
+        return std::string();
+    }
+    std::string result(sizeNeeded, '\0');
+    WideCharToMultiByte(CP_UTF8,0,wstr.data(),static_cast<int>(wstr.size()),
+        &result[0],sizeNeeded,nullptr,nullptr);
+    return result;
+}
+
+
+inline void initCmd(LPTSTR cmdLine)
+{
+    std::wistringstream wiss(cmdLine);
+    std::vector<std::wstring> tokens;
+    {
+        std::wstring token;
+        while (wiss >> token) {
+            tokens.push_back(token);
+        }
+    }
+    auto& temp = tokens[0];
+    temp = temp.substr(1, temp.length() - 2);
+    text = wstringToUtf8(temp);
+
+    temp = tokens[1];
+    temp = temp.substr(1, temp.length() - 2);
+    font = wstringToUtf8(temp);
+
+    temp = tokens[2];
+    wchar_t* end;
+    angle = std::wcstol(temp.data(), &end, 10);
+
+    temp = tokens[3];
+    colorR = std::wcstol(temp.data(), &end, 10);
+    temp = tokens[4];
+    colorG = std::wcstol(temp.data(), &end, 10);
+    temp = tokens[5];
+    colorB = std::wcstol(temp.data(), &end, 10);
+    temp = tokens[6];
+    opacity = std::wcstol(temp.data(), &end, 10);
+}
+
+inline void paintWindow(const std::vector<uint32_t>& buffer) {
     HDC hdc = GetDC(hwnd);
     auto compDC = CreateCompatibleDC(hdc);
     auto bitmap = CreateCompatibleBitmap(hdc, wScale, hScale);
@@ -26,55 +80,48 @@ void winPaint() {
     DeleteObject(bitmap);
 }
 
-LRESULT winProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+tvg::Text* createText()
 {
-    switch (msg)
+    auto textShape = tvg::Text::gen();
+    textShape->text(text.data());
+    textShape->size(fontSize);
+    textShape->font(font.data());
+    textShape->fill(colorR, colorG, colorB);
+    textShape->rotate(angle);
+    textShape->opacity(opacity);
+    return textShape;
+}
+
+inline void loadFont()
+{
+    std::string fontPath;
     {
-        case WM_ERASEBKGND:
-        {
-            return 1;
+        wchar_t path[MAX_PATH];
+        if (FAILED(SHGetFolderPathW(nullptr, CSIDL_FONTS, nullptr, 0, path))) {
+            return;
         }
-        case WM_DPICHANGED:
-        {
-            //scaleFactor = LOWORD(wParam) / 96.0f;
-            //dpiChanged(reinterpret_cast<RECT*>(lParam));
-            return 0;
-        }
-        case WM_DESTROY:
-        {
-            PostQuitMessage(0);
-            return 0;
-        }
+        fontPath = wstringToUtf8(path);
+        fontPath += "\\" + font + ".ttf";
     }
-    return DefWindowProc(hwnd, msg, wParam, lParam);
+    auto r = tvg::Text::load(fontPath.data());
 }
 
-void initDPI()
-{
-    dpi = GetDpiForWindow(hwnd) / 96.0f;
-    wScale = w * dpi;
-    hScale = h * dpi;
-}
-
-void initCanvas() {
+void paintCanvas() {
+    auto r = tvg::Initializer::init(std::thread::hardware_concurrency());
+    loadFont();
+    tvg::SwCanvas* canvas = tvg::SwCanvas::gen();
     tvg::Scene* scene = tvg::Scene::gen();
     scene->scale(dpi);
-    canvas = tvg::SwCanvas::gen();
+    std::vector<uint32_t> buffer;
     buffer.resize(wScale * hScale);
     canvas->target(buffer.data(), wScale, wScale, hScale, tvg::ColorSpace::ARGB8888);
     canvas->push(scene);
 
-    float fontSize{ 16.f }, padding{ 16.f }, angle{20.f};
     float x, y, w, h;
-    auto textShape = tvg::Text::gen();
-    textShape->text("hello");
-    textShape->size(fontSize);
-    textShape->font("SimHei");    
+    auto textShape = createText();
     textShape->bounds(&x, &y, &w, &h);
     w += 2*padding; h += 2 * padding;
-    textShape->fill(22, 88, 188);
-    textShape->rotate(-angle);
-    float thetaRad = angle * std::numbers::pi / 180.0;
+    float thetaRad = std::abs(angle) * std::numbers::pi / 180.0;
     float hh = w * std::sin(thetaRad);
     float ww = w * std::cos(thetaRad);
     textShape->translate(padding, hh);
@@ -84,12 +131,7 @@ void initCanvas() {
     while (tempH < hScale) {
         while (tempW < wScale)
         {
-            auto textShape = tvg::Text::gen();
-            textShape->text("hello");
-            textShape->size(fontSize);
-            textShape->font("SimHei");
-            textShape->fill(22, 88, 188);
-            textShape->rotate(-angle);
+            auto textShape = createText();
             textShape->translate(tempW, tempH);
             scene->push(textShape);
             tempW += ww;
@@ -101,16 +143,44 @@ void initCanvas() {
     canvas->update();
     canvas->draw();
     canvas->sync();
+    delete canvas;
+    tvg::Initializer::term();
+
+    paintWindow(buffer);
 }
 
-void showWindow() {
-    winPaint();
-    ShowWindow(hwnd, SW_SHOW);
-    UpdateWindow(hwnd);
+LRESULT winProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg)
+    {
+    case WM_ERASEBKGND:
+    {
+        return 1;
+    }
+    case WM_DPICHANGED:
+    {
+        dpi = LOWORD(wParam) / 96.0f;
+        wScale = w * dpi;
+        hScale = h * dpi;
+        paintCanvas();
+        return 0;
+    }
+    case WM_DESTROY:
+    {
+        PostQuitMessage(0);
+        return 0;
+    }
+    }
+    return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 void initWindow(HINSTANCE hInstance)
 {
+    int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int y = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    w = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
     WNDCLASSEXW wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
     wcex.style = CS_HREDRAW | CS_VREDRAW;
@@ -122,41 +192,30 @@ void initWindow(HINSTANCE hInstance)
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = nullptr;
-    wcex.lpszClassName = L"ScreenWatermark";
+    wcex.lpszClassName = L"ScreenWM";
     wcex.hIconSm = LoadIcon(hInstance, (LPCTSTR)IDI_WINLOGO);
     RegisterClassExW(&wcex);
     hwnd = CreateWindowEx(WS_EX_TRANSPARENT|WS_EX_LAYERED, //|WS_EX_TOPMOST
         wcex.lpszClassName, wcex.lpszClassName, WS_POPUP,
         x, y, w, h, nullptr, nullptr, hInstance, nullptr);
-}
-
-void initPosSize()
-{
-    x = GetSystemMetrics(SM_XVIRTUALSCREEN);
-    y = GetSystemMetrics(SM_YVIRTUALSCREEN);
-    w = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-    h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-}
-
-void initTVG() {
-    auto r = tvg::Initializer::init(std::thread::hardware_concurrency());
-    r = tvg::Text::load("C:\\Windows\\Fonts\\SimHei.ttf");
+    dpi = GetDpiForWindow(hwnd) / 96.0f;
+    wScale = w * dpi;
+    hScale = h * dpi;
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPTSTR lpCmdLine, _In_ int nCmdShow)
 {
-    initTVG();
-    initPosSize();
+    initCmd(lpCmdLine);
     initWindow(hInstance);
-    initDPI();
-    initCanvas();
-    showWindow();
+    paintCanvas();
+    ShowWindow(hwnd, SW_SHOW);
+    UpdateWindow(hwnd);
+
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
-    tvg::Initializer::term();
 	return 0;
 }
