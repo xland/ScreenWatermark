@@ -19,7 +19,7 @@ A tiny, low-resource screen watermarking tool.
 
 # Download
 
-
+[Releases](https://github.com/xland/ScreenWatermark/releases) (1.5MB)
 
 # Usage
 
