@@ -10,12 +10,11 @@
 #include <thorvg.h>
 
 int w, h,wScale,hScale;
-float fontSize{ 16.f }, padding{ 16.f };
-std::string font{ "SimHei" };
-std::string text{ "Hello" };
-int angle{ -20 };
-int colorR{ 66 }, colorG{ 88 }, colorB{ 188 },opacity{ 30 };
+int size{ 16 }, padding{ 16 };
+int angle{ -20 }, colorR{ 66 }, colorG{ 88 }, colorB{ 188 }, opacity{ 30 };
 float dpi;
+std::wstring fontw;
+std::string font, text;
 HWND hwnd;
 
 std::string wstringToUtf8(const std::wstring& wstr) {
@@ -31,7 +30,6 @@ std::string wstringToUtf8(const std::wstring& wstr) {
     return result;
 }
 
-
 inline void initCmd(LPTSTR cmdLine)
 {
     std::wistringstream wiss(cmdLine);
@@ -42,25 +40,64 @@ inline void initCmd(LPTSTR cmdLine)
             tokens.push_back(token);
         }
     }
+    if (tokens.size() < 9) {
+        MessageBox(NULL, L"cmd params error", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
+
     auto& temp = tokens[0];
+    if (temp.length() <= 2) {
+        MessageBox(NULL, L"mark text error", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
     temp = temp.substr(1, temp.length() - 2);
     text = wstringToUtf8(temp);
+    if (text.empty()) {
+        MessageBox(NULL, L"mark text error", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
 
     temp = tokens[1];
     temp = temp.substr(1, temp.length() - 2);
+    if (temp.length() <= 2) {
+        MessageBox(NULL, L"font name error", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
+    fontw = temp;
     font = wstringToUtf8(temp);
+    if (font.empty()) {
+        MessageBox(NULL, L"font name error", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
 
     temp = tokens[2];
     wchar_t* end;
+    size = std::wcstol(temp.data(), &end, 10);
+    if (size <= 0) {
+        MessageBox(NULL, L"font size error", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
+    
+    temp = tokens[3];
+    padding = std::wcstol(temp.data(), &end, 10);
+    if (padding <= 0) {
+        MessageBox(NULL, L"text padding error", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
+
+    temp = tokens[4];
     angle = std::wcstol(temp.data(), &end, 10);
 
-    temp = tokens[3];
-    colorR = std::wcstol(temp.data(), &end, 10);
-    temp = tokens[4];
-    colorG = std::wcstol(temp.data(), &end, 10);
     temp = tokens[5];
-    colorB = std::wcstol(temp.data(), &end, 10);
+    colorR = std::wcstol(temp.data(), &end, 10);
+
     temp = tokens[6];
+    colorG = std::wcstol(temp.data(), &end, 10);
+
+    temp = tokens[7];
+    colorB = std::wcstol(temp.data(), &end, 10);
+
+    temp = tokens[8];
     opacity = std::wcstol(temp.data(), &end, 10);
 }
 
@@ -84,7 +121,7 @@ tvg::Text* createText()
 {
     auto textShape = tvg::Text::gen();
     textShape->text(text.data());
-    textShape->size(fontSize);
+    textShape->size(size);
     textShape->font(font.data());
     textShape->fill(colorR, colorG, colorB);
     textShape->rotate(angle);
@@ -94,20 +131,32 @@ tvg::Text* createText()
 
 inline void loadFont()
 {
-    std::string fontPath;
-    {
-        wchar_t path[MAX_PATH];
-        if (FAILED(SHGetFolderPathW(nullptr, CSIDL_FONTS, nullptr, 0, path))) {
-            return;
-        }
-        fontPath = wstringToUtf8(path);
-        fontPath += "\\" + font + ".ttf";
+    wchar_t path[MAX_PATH];
+    if (FAILED(SHGetFolderPath(nullptr, CSIDL_FONTS, nullptr, 0, path))) {
+        MessageBox(NULL, L"can not find font path", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
     }
-    auto r = tvg::Text::load(fontPath.data());
+    auto fontPath = std::format(L"{}\\{}.ttf", path, fontw);
+    DWORD attrs = GetFileAttributes(fontPath.c_str());
+    auto flag = (attrs != INVALID_FILE_ATTRIBUTES) && !(attrs & FILE_ATTRIBUTE_DIRECTORY);
+    if (!flag) {
+        MessageBox(NULL, L"can not find font file", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
+    auto fontStr = wstringToUtf8(fontPath);
+    auto r = tvg::Text::load(fontStr.data());
+    if (r != tvg::Result::Success) {
+        MessageBox(NULL, L"can not load font file", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
 }
 
 void paintCanvas() {
     auto r = tvg::Initializer::init(std::thread::hardware_concurrency());
+    if (r != tvg::Result::Success) {
+        MessageBox(NULL, L"can not init canvas", L"Error", MB_OK | MB_ICONERROR);
+        ExitProcess(-1);
+    }
     loadFont();
     tvg::SwCanvas* canvas = tvg::SwCanvas::gen();
     tvg::Scene* scene = tvg::Scene::gen();
@@ -195,7 +244,7 @@ void initWindow(HINSTANCE hInstance)
     wcex.lpszClassName = L"ScreenWM";
     wcex.hIconSm = LoadIcon(hInstance, (LPCTSTR)IDI_WINLOGO);
     RegisterClassExW(&wcex);
-    hwnd = CreateWindowEx(WS_EX_TRANSPARENT|WS_EX_LAYERED, //|WS_EX_TOPMOST
+    hwnd = CreateWindowEx(WS_EX_TRANSPARENT|WS_EX_LAYERED|WS_EX_TOPMOST,
         wcex.lpszClassName, wcex.lpszClassName, WS_POPUP,
         x, y, w, h, nullptr, nullptr, hInstance, nullptr);
     dpi = GetDpiForWindow(hwnd) / 96.0f;
