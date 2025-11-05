@@ -244,7 +244,7 @@ void initWindow(HINSTANCE hInstance)
     wcex.lpszClassName = L"ScreenWM";
     wcex.hIconSm = LoadIcon(hInstance, (LPCTSTR)IDI_WINLOGO);
     RegisterClassExW(&wcex);
-    hwnd = CreateWindowEx(WS_EX_TRANSPARENT|WS_EX_LAYERED|WS_EX_TOPMOST,
+    hwnd = CreateWindowEx(WS_EX_TRANSPARENT|WS_EX_LAYERED|WS_EX_TOPMOST|WS_EX_TOOLWINDOW,
         wcex.lpszClassName, wcex.lpszClassName, WS_POPUP,
         x, y, w, h, nullptr, nullptr, hInstance, nullptr);
     dpi = GetDpiForWindow(hwnd) / 96.0f;
