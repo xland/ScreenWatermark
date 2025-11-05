@@ -3,11 +3,11 @@ A tiny, low-resource screen watermarking tool.
 
 # Features
 
-- Extremely lightweight(`1.5MB`).
-- Low memory footprint(`4.5MB`).
-- No CPU usage.
-- Easy to maintain, only one .cpp file.
-- Supports Windows 7.
+- Extremely lightweight, `1.5MB`.
+- Very low memory footprint, `4.5MB`.
+- No CPU usage, `0%`.
+- Easy to maintain, only one `main.cpp` file.
+- Supports `Windows 7`.
 - Supports multiple monitors.
 - Supports high-DPI displays.
 - Supports DPIChange event.
