@@ -6,6 +6,8 @@ A tiny, low-resource screen watermarking tool.
 - Extremely lightweight(`1.5MB`).
 - Low memory footprint(`4.5MB`).
 - No CPU usage.
+- Easy to maintain, only one .cpp file.
+- Supports Windows 7.
 - Supports multiple monitors.
 - Supports high-DPI displays.
 - Supports DPIChange event.
@@ -22,7 +24,7 @@ A tiny, low-resource screen watermarking tool.
 # Usage
 
 ```shell
-ScreenWatermark.exe "Hello" "Arial" 16 26 -30 66 166 188 80
+> ScreenWatermark.exe "Hello" "Arial" 16 26 -30 66 166 188 80
 ```
 - `"Hello"` : Watermark text
 - `"Arial"` : Font name
@@ -36,13 +38,13 @@ ScreenWatermark.exe "Hello" "Arial" 16 26 -30 66 166 188 80
 
 # Note
 
-Not all system-installed fonts are usable. The following fonts have been tested and confirmed to work:
-
+- Not all system-installed fonts are usable. The following fonts have been tested and confirmed to work:
 > 并不是所有系统已安装字体都可以使用，目前已测试可用的字体有：
+> - SimHei
+> - SimKai
+> - SimFang
+> - Arial (does not support Chinese characters)
 
-- SimHei
-- SimKai
-- SimFang
-- Arial (does not support Chinese characters)
+- This project is based on [Thorvg](https://github.com/thorvg/thorvg).
 
 
