@@ -11,7 +11,7 @@
 
 int w, h,wScale,hScale;
 int size{ 16 }, padding{ 16 };
-int angle{ -20 }, colorR{ 66 }, colorG{ 88 }, colorB{ 188 }, opacity{ 30 };
+int angle{ -45 }, colorR{ 66 }, colorG{ 88 }, colorB{ 188 }, opacity{ 30 };
 float dpi;
 std::wstring fontw;
 std::string font, text;
@@ -124,7 +124,7 @@ tvg::Text* createText()
     textShape->size(size);
     textShape->font(font.data());
     textShape->fill(colorR, colorG, colorB);
-    textShape->rotate(angle);
+    //textShape->rotate(angle);
     textShape->opacity(opacity);
     return textShape;
 }
@@ -160,38 +160,41 @@ void paintCanvas() {
     loadFont();
     tvg::SwCanvas* canvas = tvg::SwCanvas::gen();
     tvg::Scene* scene = tvg::Scene::gen();
+    tvg::Scene* scene1 = tvg::Scene::gen();
     scene->scale(dpi);
     std::vector<uint32_t> buffer;
     buffer.resize(wScale * hScale);
     canvas->target(buffer.data(), wScale, wScale, hScale, tvg::ColorSpace::ARGB8888);
     canvas->push(scene);
+    scene->push(scene1);
 
-    float x, y, w, h;
-    auto textShape = createText();
-    textShape->bounds(&x, &y, &w, &h);
-    w += 2*padding; h += 2 * padding;
-    float thetaRad = std::abs(angle) * std::numbers::pi / 180.0;
-    float hh = w * std::sin(thetaRad);
-    float ww = w * std::cos(thetaRad);
-    textShape->translate(padding, hh);
-    scene->push(textShape);
-
-    float tempW{ ww + padding }, tempH{hh+padding};
-    while (tempH < hScale) {
-        while (tempW < wScale)
-        {
+    double rSize = std::hypot(w, h);
+    float xT, yT, wT, hT;
+    int tempW{ 0 }, tempH{ 0 };
+    bool flag{ true };
+    while (tempH < rSize) {
+        while (tempW < rSize) {
             auto textShape = createText();
+            if (flag) {
+                textShape->bounds(&xT, &yT, &wT, &hT);
+                flag = false;
+            }
             textShape->translate(tempW, tempH);
-            scene->push(textShape);
-            tempW += ww;
+            scene1->push(textShape);
+            tempW = tempW + padding + wT;
         }
-        tempW = padding;
-        tempH += hh+padding;
+        tempW = 0;
+        tempH = tempH + padding + hT;
     }
+
+    scene1->translate(-rSize/2, -rSize/2);
+    scene->rotate(angle);           // 绕原点旋转
+    scene->translate(rSize / 2, rSize / 2);
 
     canvas->update();
     canvas->draw();
     canvas->sync();
+
     delete canvas;
     tvg::Initializer::term();
 
@@ -212,6 +215,14 @@ LRESULT winProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         wScale = w * dpi;
         hScale = h * dpi;
         paintCanvas();
+        return 0;
+    }
+    case WM_TIMER:
+    {
+        if (wParam == WM_APP+1) {
+            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
         return 0;
     }
     case WM_DESTROY:
@@ -247,6 +258,7 @@ void initWindow(HINSTANCE hInstance)
     hwnd = CreateWindowEx(WS_EX_TRANSPARENT|WS_EX_LAYERED|WS_EX_TOPMOST|WS_EX_TOOLWINDOW,
         wcex.lpszClassName, wcex.lpszClassName, WS_POPUP,
         x, y, w, h, nullptr, nullptr, hInstance, nullptr);
+    SetTimer(hwnd, WM_APP+1, 1000, NULL);
     dpi = GetDpiForWindow(hwnd) / 96.0f;
     wScale = w * dpi;
     hScale = h * dpi;
