@@ -41,34 +41,39 @@ inline void initCmd(LPTSTR cmdLine)
             tokens.push_back(token);
         }
     }
-    if (tokens.size() < 9) {
+    if (tokens.size() < 13) {
         MessageBox(NULL, L"cmd params error", L"Error", MB_OK | MB_ICONERROR);
         ExitProcess(-1);
+        return;
     }
 
     auto& temp = tokens[0];
     if (temp.length() <= 2) {
         MessageBox(NULL, L"mark text error", L"Error", MB_OK | MB_ICONERROR);
         ExitProcess(-1);
+        return;
     }
     temp = temp.substr(1, temp.length() - 2);
     text = wstringToUtf8(temp);
     if (text.empty()) {
         MessageBox(NULL, L"mark text error", L"Error", MB_OK | MB_ICONERROR);
         ExitProcess(-1);
+        return;
     }
 
-    temp = tokens[1];
-    temp = temp.substr(1, temp.length() - 2);
+    temp = tokens[1];    
     if (temp.length() <= 2) {
         MessageBox(NULL, L"font name error", L"Error", MB_OK | MB_ICONERROR);
         ExitProcess(-1);
+        return;
     }
+    temp = temp.substr(1, temp.length() - 2);
     fontw = temp;
     font = wstringToUtf8(temp);
     if (font.empty()) {
         MessageBox(NULL, L"font name error", L"Error", MB_OK | MB_ICONERROR);
         ExitProcess(-1);
+        return;
     }
 
     temp = tokens[2];
@@ -77,6 +82,7 @@ inline void initCmd(LPTSTR cmdLine)
     if (size <= 0) {
         MessageBox(NULL, L"font size error", L"Error", MB_OK | MB_ICONERROR);
         ExitProcess(-1);
+        return;
     }
     
     temp = tokens[3];
@@ -84,6 +90,7 @@ inline void initCmd(LPTSTR cmdLine)
     if (padding <= 0) {
         MessageBox(NULL, L"text padding error", L"Error", MB_OK | MB_ICONERROR);
         ExitProcess(-1);
+        return;
     }
 
     temp = tokens[4];
