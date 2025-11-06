@@ -12,6 +12,7 @@
 int w, h,wScale,hScale;
 int size{ 16 }, padding{ 16 };
 int angle{ -45 }, colorR{ 66 }, colorG{ 88 }, colorB{ 188 }, opacity{ 30 };
+int border{ 1 }, borderR{ 255 }, borderG{ 122 }, borderB{ 0 };
 float dpi;
 std::wstring fontw;
 std::string font, text;
@@ -96,8 +97,20 @@ inline void initCmd(LPTSTR cmdLine)
 
     temp = tokens[7];
     colorB = std::wcstol(temp.data(), &end, 10);
-
+    
     temp = tokens[8];
+    border = std::wcstol(temp.data(), &end, 10);
+
+    temp = tokens[9];
+    borderR = std::wcstol(temp.data(), &end, 10);
+
+    temp = tokens[10];
+    borderG = std::wcstol(temp.data(), &end, 10);
+
+    temp = tokens[11];
+    borderB = std::wcstol(temp.data(), &end, 10);
+
+    temp = tokens[12];
     opacity = std::wcstol(temp.data(), &end, 10);
 }
 
@@ -124,7 +137,9 @@ tvg::Text* createText()
     textShape->size(size);
     textShape->font(font.data());
     textShape->fill(colorR, colorG, colorB);
-    //textShape->rotate(angle);
+    if (border > 0) {
+        textShape->outline(border, borderR, borderG, borderB);
+    }
     textShape->opacity(opacity);
     return textShape;
 }
@@ -160,15 +175,13 @@ void paintCanvas() {
     loadFont();
     tvg::SwCanvas* canvas = tvg::SwCanvas::gen();
     tvg::Scene* scene = tvg::Scene::gen();
-    tvg::Scene* scene1 = tvg::Scene::gen();
     scene->scale(dpi);
     std::vector<uint32_t> buffer;
     buffer.resize(wScale * hScale);
     canvas->target(buffer.data(), wScale, wScale, hScale, tvg::ColorSpace::ARGB8888);
     canvas->push(scene);
-    scene->push(scene1);
 
-    double rSize = std::hypot(w, h);
+    double rSize = std::hypot(wScale, hScale);
     float xT, yT, wT, hT;
     int tempW{ 0 }, tempH{ 0 };
     bool flag{ true };
@@ -180,16 +193,27 @@ void paintCanvas() {
                 flag = false;
             }
             textShape->translate(tempW, tempH);
-            scene1->push(textShape);
+            scene->push(textShape);
             tempW = tempW + padding + wT;
         }
         tempW = 0;
         tempH = tempH + padding + hT;
     }
+    scene->rotate(angle);    
 
-    scene1->translate(-rSize/2, -rSize/2);
-    scene->rotate(angle);
-    scene->translate(rSize / 2, rSize / 2);
+    /*
+        已知一个矩形A的宽和高：wScale,hScale，与一个正方形B的边长rSize。 
+        一开始：矩形和正方形左上角的点重合，此点为坐标系原点：0,0 
+        随后正方形B，绕着原点旋转一个角度angle, 
+        请问：该如何移动B，才能让A和B的中心点重合
+    */
+    float angleRad = angle * std::numbers::pi / 180.0;
+    float half = rSize / 2.0;
+    float bx = half * std::cos(angleRad) - half * std::sin(angleRad);
+    float by = half * std::sin(angleRad) + half * std::cos(angleRad);
+    float tx = wScale / 2.0 - bx;
+    float ty = hScale / 2.0 - by;
+    scene->translate(tx, ty);
 
     canvas->update();
     canvas->draw();

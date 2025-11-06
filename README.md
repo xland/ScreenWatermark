@@ -24,8 +24,8 @@ A tiny, low-resource screen watermarking tool.
 # Usage
 
 ```shell
-> ScreenWatermark.exe "Hello" "Arial" 16 26 -30 66 166 188 80
-> ScreenWatermark.exe "中文" "SimHei" 16 26 -30 66 166 188 80
+> ScreenWatermark.exe "Hello" "Arial" 16 26 -30 66 166 188 1 255 122 0 80
+> ScreenWatermark.exe "中文" "SimHei" 16 26 -30 66 166 188 1 255 122 0 80
 ```
 - `"Hello"` : Watermark text
 - `"Arial"` : Font name
@@ -35,6 +35,10 @@ A tiny, low-resource screen watermarking tool.
 - `66` : Color red
 - `166` : Color green
 - `188` : Color blue
+- `1` : Border Width
+- `255` : Border color red
+- `122` : Border color green
+- `0` : Border color blue
 - `80` : Color opacity
 
 # Note
