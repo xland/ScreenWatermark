@@ -31,7 +31,7 @@ A tiny, low-resource screen watermarking tool.
 - `"Arial"` : Font name
 - `16` : Font size
 - `26` : Text padding
-- `-30` : Rotate angle (-90°≤ r ≤ 90°)
+- `-30` : Rotate angle
 - `66` : Color red
 - `166` : Color green
 - `188` : Color blue

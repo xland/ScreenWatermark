@@ -22,12 +22,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "GitHub xland"
             VALUE "FileDescription", "ScreenWatermark"
-            VALUE "FileVersion", "0.0.1.0"
+            VALUE "FileVersion", "1.0.0.0"
             VALUE "InternalName", "ScreenWatermark.exe"
             VALUE "LegalCopyright", "Copyright (C) LiuXiaoLun 2025"
             VALUE "OriginalFilename", "ScreenWatermark.exe"
             VALUE "ProductName", "ScreenWatermark"
-            VALUE "ProductVersion", "0.0.1.0"
+            VALUE "ProductVersion", "1.0.0.0"
         END
     END
     BLOCK "VarFileInfo"

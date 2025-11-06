@@ -188,7 +188,7 @@ void paintCanvas() {
     }
 
     scene1->translate(-rSize/2, -rSize/2);
-    scene->rotate(angle);           // 绕原点旋转
+    scene->rotate(angle);
     scene->translate(rSize / 2, rSize / 2);
 
     canvas->update();
