@@ -48,12 +48,6 @@ inline void initCmd(LPTSTR cmdLine)
     }
 
     auto& temp = tokens[0];
-    if (temp.length() <= 2) {
-        MessageBox(NULL, L"mark text error", L"Error", MB_OK | MB_ICONERROR);
-        ExitProcess(-1);
-        return;
-    }
-    temp = temp.substr(1, temp.length() - 2);
     text = wstringToUtf8(temp);
     if (text.empty()) {
         MessageBox(NULL, L"mark text error", L"Error", MB_OK | MB_ICONERROR);
@@ -61,13 +55,7 @@ inline void initCmd(LPTSTR cmdLine)
         return;
     }
 
-    temp = tokens[1];    
-    if (temp.length() <= 2) {
-        MessageBox(NULL, L"font name error", L"Error", MB_OK | MB_ICONERROR);
-        ExitProcess(-1);
-        return;
-    }
-    temp = temp.substr(1, temp.length() - 2);
+    temp = tokens[1];
     fontw = temp;
     font = wstringToUtf8(temp);
     if (font.empty()) {
